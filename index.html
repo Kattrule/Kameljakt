@@ -124,25 +124,13 @@
     let box = 40; 
     let gridCount, snake1, dir1, nextDir1, snake2, dir2, nextDir2, food, gameInterval, mode;
 
-    const gfx1 = { b: new Image(), h: new Image(), t: new Image(), hu: new Image(), hd: new Image(), tb: new Image() };
-    const gfx2 = { b: new Image(), h: new Image(), t: new Image(), hu: new Image(), hd: new Image(), tb: new Image() };
+    // Om varje kamel är en hel bild:
+    const gfx1 = { camel: new Image() };
+    const gfx2 = { camel: new Image() };
 
-    // Koppla bildkällor och lägg till felsökning i konsolen om bild saknas
-    function setupImages(g, prefix) {
-        g.b.src = prefix + "-kropp.png";
-        g.h.src = prefix + "-huvud-fram.png";
-        g.t.src = prefix + "-svans-obiten.png";
-        g.hu.src = prefix + "-huvud-upp.png";
-        g.hd.src = prefix + "-huvud-ner.png";
-        g.tb.src = prefix + "-svans-biten.png";
-
-        Object.keys(g).forEach(key => {
-            g[key].onerror = () => console.warn(`Kunde inte ladda bild: ${g[key].src}`);
-        });
-    }
-
-    setupImages(gfx1, "p1");
-    setupImages(gfx2, "p2");
+    // Ändra filnamnet nedan om dina hel-kamel-bilder heter något annat på GitHub!
+    gfx1.camel.src = "p1-kropp.png"; 
+    gfx2.camel.src = "p2-kropp.png";
 
     document.getElementById("speedSlider").addEventListener("input", function() {
         if(gameInterval) {
@@ -242,58 +230,35 @@
             
             let moveDir = currentDir;
             
-            if (i > 0 && i < snake.length - 1) {
-                let back = snake[i+1];
-                if(seg.x > back.x) moveDir = "RIGHT"; else if(seg.x < back.x) moveDir = "LEFT";
-                else if(seg.y > back.y) moveDir = "DOWN"; else if(seg.y < back.y) moveDir = "UP";
-            } else if (i === snake.length - 1 && i > 0) {
-                let front = snake[i-1];
-                if(front.x > seg.x) moveDir = "RIGHT"; else if(front.x < seg.x) moveDir = "LEFT";
-                else if(front.y > seg.y) moveDir = "DOWN"; else if(front.y < seg.y) moveDir = "UP";
+            // Räkna ut vilken riktning den här specifika kamelen går åt
+            if (i < snake.length - 1) {
+                let next = snake[i+1];
+                if(seg.x > next.x) moveDir = "RIGHT"; 
+                else if(seg.x < next.x) moveDir = "LEFT";
+                else if(seg.y > next.y) moveDir = "DOWN"; 
+                else if(seg.y < next.y) moveDir = "UP";
+            } else if (i > 0) {
+                let prev = snake[i-1];
+                if(prev.x > seg.x) moveDir = "RIGHT"; 
+                else if(prev.x < seg.x) moveDir = "LEFT";
+                else if(prev.y > seg.y) moveDir = "DOWN"; 
+                else if(prev.y < seg.y) moveDir = "UP";
             }
 
             const s = box + 1; 
             const offset = -Math.floor(s / 2);
 
-            // 1. HUVUD
-            if (i === 0) {
-                let hImg = g.h;
-                if (currentDir === "UP") hImg = g.hu;
-                else if (currentDir === "DOWN") hImg = g.hd;
-                else if (currentDir === "LEFT") ctx.scale(-1, 1);
-                
-                if(hImg.complete && hImg.naturalWidth !== 0) {
-                    ctx.drawImage(hImg, offset, offset, s, s);
-                } else { 
-                    ctx.fillStyle = "#2196f3"; 
-                    ctx.fillRect(offset, offset, s, s); 
-                }
-            } 
-            // 2. SVANS
-            else if (i === snake.length - 1) {
-                if(moveDir === "LEFT") ctx.scale(-1, 1);
-                else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
-                else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
+            // Rotera kamelen efter dess riktning
+            if(moveDir === "LEFT") ctx.scale(-1, 1);
+            else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
+            else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
 
-                if(g.t.complete && g.t.naturalWidth !== 0) {
-                    ctx.drawImage(g.t, offset, offset, s, s);
-                } else { 
-                    ctx.fillStyle = "#f44336"; 
-                    ctx.fillRect(offset, offset, s, s); 
-                }
-            } 
-            // 3. KROPP
-            else {
-                if(moveDir === "LEFT") ctx.scale(-1, 1);
-                else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
-                else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
-
-                if(g.b.complete && g.b.naturalWidth !== 0) {
-                    ctx.drawImage(g.b, offset, offset, s, s);
-                } else { 
-                    ctx.fillStyle = "#ff9800"; 
-                    ctx.fillRect(offset, offset, s, s); 
-                }
+            // RITA HELA KAMELEN PÅ VARJE RUTA
+            if(g.camel.complete && g.camel.naturalWidth !== 0) {
+                ctx.drawImage(g.camel, offset, offset, s, s);
+            } else { 
+                ctx.fillStyle = "#ff9800"; 
+                ctx.fillRect(offset, offset, s, s); 
             }
 
             ctx.restore();
