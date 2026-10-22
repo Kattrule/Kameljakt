@@ -237,42 +237,74 @@
             
             let moveDir = currentDir;
             
-            if (i < snake.length - 1) {
-                let next = snake[i+1];
-                if(seg.x > next.x) moveDir = "RIGHT"; 
-                else if(seg.x < next.x) moveDir = "LEFT";
-                else if(seg.y > next.y) moveDir = "DOWN"; 
-                else if(seg.y < next.y) moveDir = "UP";
-            } else if (i > 0) {
-                let prev = snake[i-1];
-                if(prev.x > seg.x) moveDir = "RIGHT"; 
-                else if(prev.x < seg.x) moveDir = "LEFT";
-                else if(prev.y > seg.y) moveDir = "DOWN"; 
-                else if(prev.y < seg.y) moveDir = "UP";
+            if (i > 0 && i < snake.length - 1) {
+                let back = snake[i+1];
+                if(seg.x > back.x) moveDir = "RIGHT"; else if(seg.x < back.x) moveDir = "LEFT";
+                else if(seg.y > back.y) moveDir = "DOWN"; else if(seg.y < back.y) moveDir = "UP";
+            } else if (i === snake.length - 1 && i > 0) {
+                let front = snake[i-1];
+                if(front.x > seg.x) moveDir = "RIGHT"; else if(front.x < seg.x) moveDir = "LEFT";
+                else if(front.y > seg.y) moveDir = "DOWN"; else if(front.y < seg.y) moveDir = "UP";
             }
 
             const s = box + 1; 
             const offset = -Math.floor(s / 2);
 
-            // Rotera efter rörelseriktning
-            if(moveDir === "LEFT") ctx.scale(-1, 1);
-            else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
-            else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
+            // 1. HUVUDET (i === 0)
+            if (i === 0) {
+                let isTurning = false;
+                if (snake.length > 1) {
+                    let dx = snake[0].x - snake[1].x;
+                    let dy = snake[0].y - snake[1].y;
+                    if ((currentDir === "UP" || currentDir === "DOWN") && dx !== 0) isTurning = true;
+                    if ((currentDir === "LEFT" || currentDir === "RIGHT") && dy !== 0) isTurning = true;
+                }
 
-            // RITA ALLA DELAR PÅ VARJE KAMEL:
-            
-            // 1. Kropp
-            if(g.b.complete && g.b.naturalWidth !== 0) ctx.drawImage(g.b, offset, offset, s, s);
-            else { ctx.fillStyle = "#ff9800"; ctx.fillRect(offset, offset, s, s); }
+                let hImg = g.h; // Standard: huvud-fram
+                if (isTurning) {
+                    if (currentDir === "UP") hImg = g.hu;
+                    else if (currentDir === "DOWN") hImg = g.hd;
+                }
 
-            // 2. Huvud (anpassar efter upp/ner/fram)
-            let hImg = g.h;
-            if (moveDir === "UP") hImg = g.hu;
-            else if (moveDir === "DOWN") hImg = g.hd;
-            if(hImg.complete && hImg.naturalWidth !== 0) ctx.drawImage(hImg, offset, offset, s, s);
+                if (!isTurning || currentDir === "LEFT" || currentDir === "RIGHT") {
+                    if (currentDir === "LEFT") ctx.scale(-1, 1);
+                    else if (currentDir === "UP") ctx.rotate(-Math.PI/2);
+                    else if (currentDir === "DOWN") ctx.rotate(Math.PI/2);
+                }
 
-            // 3. Svans
-            if(g.t.complete && g.t.naturalWidth !== 0) ctx.drawImage(g.t, offset, offset, s, s);
+                if(hImg.complete && hImg.naturalWidth !== 0) {
+                    ctx.drawImage(hImg, offset, offset, s, s);
+                } else { 
+                    ctx.fillStyle = "#2196f3"; 
+                    ctx.fillRect(offset, offset, s, s); 
+                }
+            } 
+            // 2. SVANSEN (Sista biten)
+            else if (i === snake.length - 1) {
+                if(moveDir === "LEFT") ctx.scale(-1, 1);
+                else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
+                else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
+
+                if(g.t.complete && g.t.naturalWidth !== 0) {
+                    ctx.drawImage(g.t, offset, offset, s, s);
+                } else { 
+                    ctx.fillStyle = "#f44336"; 
+                    ctx.fillRect(offset, offset, s, s); 
+                }
+            } 
+            // 3. KROPPEN (Mittenbitar)
+            else {
+                if(moveDir === "LEFT") ctx.scale(-1, 1);
+                else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
+                else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
+
+                if(g.b.complete && g.b.naturalWidth !== 0) {
+                    ctx.drawImage(g.b, offset, offset, s, s);
+                } else { 
+                    ctx.fillStyle = "#ff9800"; 
+                    ctx.fillRect(offset, offset, s, s); 
+                }
+            }
 
             ctx.restore();
         });
