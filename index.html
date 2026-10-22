@@ -124,13 +124,20 @@
     let box = 40; 
     let gridCount, snake1, dir1, nextDir1, snake2, dir2, nextDir2, food, gameInterval, mode;
 
-    // Om varje kamel är en hel bild:
-    const gfx1 = { camel: new Image() };
-    const gfx2 = { camel: new Image() };
+    const gfx1 = { b: new Image(), h: new Image(), t: new Image(), hu: new Image(), hd: new Image(), tb: new Image() };
+    const gfx2 = { b: new Image(), h: new Image(), t: new Image(), hu: new Image(), hd: new Image(), tb: new Image() };
 
-    // Ändra filnamnet nedan om dina hel-kamel-bilder heter något annat på GitHub!
-    gfx1.camel.src = "p1-kropp.png"; 
-    gfx2.camel.src = "p2-kropp.png";
+    function setupImages(g, prefix) {
+        g.b.src  = prefix + "-kropp.png";
+        g.h.src  = prefix + "-huvud-fram.png";
+        g.hu.src = prefix + "-huvud-upp.png";
+        g.hd.src = prefix + "-huvud-ner.png";
+        g.t.src  = prefix + "-svans-obiten.png";
+        g.tb.src = prefix + "-svans-biten.png";
+    }
+
+    setupImages(gfx1, "p1");
+    setupImages(gfx2, "p2");
 
     document.getElementById("speedSlider").addEventListener("input", function() {
         if(gameInterval) {
@@ -230,7 +237,6 @@
             
             let moveDir = currentDir;
             
-            // Räkna ut vilken riktning den här specifika kamelen går åt
             if (i < snake.length - 1) {
                 let next = snake[i+1];
                 if(seg.x > next.x) moveDir = "RIGHT"; 
@@ -248,18 +254,25 @@
             const s = box + 1; 
             const offset = -Math.floor(s / 2);
 
-            // Rotera kamelen efter dess riktning
+            // Rotera efter rörelseriktning
             if(moveDir === "LEFT") ctx.scale(-1, 1);
             else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
             else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
 
-            // RITA HELA KAMELEN PÅ VARJE RUTA
-            if(g.camel.complete && g.camel.naturalWidth !== 0) {
-                ctx.drawImage(g.camel, offset, offset, s, s);
-            } else { 
-                ctx.fillStyle = "#ff9800"; 
-                ctx.fillRect(offset, offset, s, s); 
-            }
+            // RITA ALLA DELAR PÅ VARJE KAMEL:
+            
+            // 1. Kropp
+            if(g.b.complete && g.b.naturalWidth !== 0) ctx.drawImage(g.b, offset, offset, s, s);
+            else { ctx.fillStyle = "#ff9800"; ctx.fillRect(offset, offset, s, s); }
+
+            // 2. Huvud (anpassar efter upp/ner/fram)
+            let hImg = g.h;
+            if (moveDir === "UP") hImg = g.hu;
+            else if (moveDir === "DOWN") hImg = g.hd;
+            if(hImg.complete && hImg.naturalWidth !== 0) ctx.drawImage(hImg, offset, offset, s, s);
+
+            // 3. Svans
+            if(g.t.complete && g.t.naturalWidth !== 0) ctx.drawImage(g.t, offset, offset, s, s);
 
             ctx.restore();
         });
