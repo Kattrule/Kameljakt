@@ -237,74 +237,83 @@
             
             let moveDir = currentDir;
             
-            if (i > 0 && i < snake.length - 1) {
-                let back = snake[i+1];
-                if(seg.x > back.x) moveDir = "RIGHT"; else if(seg.x < back.x) moveDir = "LEFT";
-                else if(seg.y > back.y) moveDir = "DOWN"; else if(seg.y < back.y) moveDir = "UP";
-            } else if (i === snake.length - 1 && i > 0) {
-                let front = snake[i-1];
-                if(front.x > seg.x) moveDir = "RIGHT"; else if(front.x < seg.x) moveDir = "LEFT";
-                else if(front.y > seg.y) moveDir = "DOWN"; else if(front.y < seg.y) moveDir = "UP";
+            if (i < snake.length - 1) {
+                let next = snake[i+1];
+                if(seg.x > next.x) moveDir = "RIGHT"; 
+                else if(seg.x < next.x) moveDir = "LEFT";
+                else if(seg.y > next.y) moveDir = "DOWN"; 
+                else if(seg.y < next.y) moveDir = "UP";
+            } else if (i > 0) {
+                let prev = snake[i-1];
+                if(prev.x > seg.x) moveDir = "RIGHT"; 
+                else if(prev.x < seg.x) moveDir = "LEFT";
+                else if(prev.y > seg.y) moveDir = "DOWN"; 
+                else if(prev.y < seg.y) moveDir = "UP";
             }
 
             const s = box + 1; 
             const offset = -Math.floor(s / 2);
 
-            // 1. HUVUDET (i === 0)
-            if (i === 0) {
-                let isTurning = false;
-                if (snake.length > 1) {
-                    let dx = snake[0].x - snake[1].x;
-                    let dy = snake[0].y - snake[1].y;
-                    if ((currentDir === "UP" || currentDir === "DOWN") && dx !== 0) isTurning = true;
-                    if ((currentDir === "LEFT" || currentDir === "RIGHT") && dy !== 0) isTurning = true;
-                }
-
-                let hImg = g.h; // Standard: huvud-fram
-                if (isTurning) {
-                    if (currentDir === "UP") hImg = g.hu;
-                    else if (currentDir === "DOWN") hImg = g.hd;
-                }
-
-                if (!isTurning || currentDir === "LEFT" || currentDir === "RIGHT") {
-                    if (currentDir === "LEFT") ctx.scale(-1, 1);
-                    else if (currentDir === "UP") ctx.rotate(-Math.PI/2);
-                    else if (currentDir === "DOWN") ctx.rotate(Math.PI/2);
-                }
-
-                if(hImg.complete && hImg.naturalWidth !== 0) {
-                    ctx.drawImage(hImg, offset, offset, s, s);
-                } else { 
-                    ctx.fillStyle = "#2196f3"; 
-                    ctx.fillRect(offset, offset, s, s); 
-                }
-            } 
-            // 2. SVANSEN (Sista biten)
-            else if (i === snake.length - 1) {
-                if(moveDir === "LEFT") ctx.scale(-1, 1);
-                else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
-                else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
-
-                if(g.t.complete && g.t.naturalWidth !== 0) {
-                    ctx.drawImage(g.t, offset, offset, s, s);
-                } else { 
-                    ctx.fillStyle = "#f44336"; 
-                    ctx.fillRect(offset, offset, s, s); 
-                }
-            } 
-            // 3. KROPPEN (Mittenbitar)
-            else {
-                if(moveDir === "LEFT") ctx.scale(-1, 1);
-                else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
-                else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
-
-                if(g.b.complete && g.b.naturalWidth !== 0) {
-                    ctx.drawImage(g.b, offset, offset, s, s);
-                } else { 
-                    ctx.fillStyle = "#ff9800"; 
-                    ctx.fillRect(offset, offset, s, s); 
+            // Kolla om kamelen befinner sig i ett hörn / en sväng
+            let isCorner = false;
+            let back = (i < snake.length - 1) ? snake[i+1] : null;
+            let front = (i > 0) ? snake[i-1] : null;
+            
+            if (back && front) {
+                let dx1 = seg.x - back.x;
+                let dy1 = seg.y - back.y;
+                let dx2 = front.x - seg.x;
+                let dy2 = front.y - seg.y;
+                if (dx1 !== dx2 || dy1 !== dy2) {
+                    isCorner = true;
                 }
             }
+
+            // 1. RITA KROPP OCH SVANS (Dessa roteras alltid efter riktning)
+            ctx.save();
+            if(moveDir === "LEFT") ctx.scale(-1, 1);
+            else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
+            else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
+
+            // Kropp
+            if(g.b.complete && g.b.naturalWidth !== 0) ctx.drawImage(g.b, offset, offset, s, s);
+            else { ctx.fillStyle = "#ff9800"; ctx.fillRect(offset, offset, s, s); }
+
+            // Svans: Sista kamelen har obiten svans, övriga har biten svans
+            let tailImg = (i === snake.length - 1) ? g.t : g.tb;
+            if(tailImg.complete && tailImg.naturalWidth !== 0) ctx.drawImage(tailImg, offset, offset, s, s);
+            else { ctx.fillStyle = "#f44336"; ctx.fillRect(offset, offset, s, s); }
+
+            ctx.restore();
+
+            // 2. RITA HUVUD (Använder huvud-upp / huvud-ner ENDAST i hörn vid upp/nedgång)
+            ctx.save();
+            let useRotatedTransform = true;
+            let hImg = g.h; // Standard: huvud-fram
+
+            if (isCorner) {
+                if (moveDir === "UP") {
+                    hImg = g.hu;
+                    useRotatedTransform = false;
+                } else if (moveDir === "DOWN") {
+                    hImg = g.hd;
+                    useRotatedTransform = false;
+                }
+            }
+
+            if (useRotatedTransform) {
+                if(moveDir === "LEFT") ctx.scale(-1, 1);
+                else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
+                else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
+            }
+
+            if(hImg.complete && hImg.naturalWidth !== 0) {
+                ctx.drawImage(hImg, offset, offset, s, s);
+            } else {
+                ctx.fillStyle = "#2196f3";
+                ctx.fillRect(offset, offset, s, s);
+            }
+            ctx.restore();
 
             ctx.restore();
         });
