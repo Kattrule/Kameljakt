@@ -53,7 +53,9 @@
 
         canvas { 
             width: 100%; height: 100%; display: block; 
+            /* Gör att pixel-grafik förblir skarp vid skalning i CSS */
             image-rendering: pixelated; 
+            image-rendering: crisp-edges;
         }
 
         /* MOBILKNAPPAR */
@@ -150,7 +152,9 @@
         canvas.width = gridCount * box;
         canvas.height = gridCount * box;
 
-        // VIKTIGT: Börjar på längd 3 för att du ska se alla delar direkt!
+        // Stänger av bildsmoothing för att förhindra att ikonerna blir suddiga/blurriga
+        ctx.imageSmoothingEnabled = false;
+
         snake1 = [{x: 4, y: 2}, {x: 3, y: 2}, {x: 2, y: 2}]; 
         dir1 = nextDir1 = "RIGHT";
         
@@ -211,6 +215,9 @@
     }
 
     function draw() {
+        // Försäkra att bildutjämnaren är avstängd vid varje riting
+        ctx.imageSmoothingEnabled = false;
+
         ctx.fillStyle = "#4caf50";
         ctx.fillRect(0,0, canvas.width, canvas.height);
 
@@ -224,11 +231,15 @@
     function drawKaravan(snake, currentDir, g) {
         snake.forEach((seg, i) => {
             ctx.save();
-            ctx.translate(seg.x * box + box/2, seg.y * box + box/2);
+            
+            // Använd Math.floor för att undvika halvpixel-oskärpa
+            const posX = Math.floor(seg.x * box + box / 2);
+            const posY = Math.floor(seg.y * box + box / 2);
+            ctx.translate(posX, posY);
             
             let moveDir = currentDir;
             
-            // Listar ut vinkeln
+            // Räkna ut riktningen för kropp och svans
             if (i > 0 && i < snake.length - 1) {
                 let back = snake[i+1];
                 if(seg.x > back.x) moveDir = "RIGHT"; else if(seg.x < back.x) moveDir = "LEFT";
@@ -239,38 +250,49 @@
                 else if(front.y > seg.y) moveDir = "DOWN"; else if(front.y < seg.y) moveDir = "UP";
             }
 
-            const s = box + 0.5; 
-            
-            // 1. RITA HUVUDET (Rotera INTE om upp/ner bild används)
+            // Lägg till 1px extra överlappning så att inga glipor uppstår mellan delarna
+            const s = box + 1; 
+            const offset = -Math.floor(s / 2);
+
+            // 1. RITA HUVUDET
             if (i === 0) {
-                let hImg = g.h; // default: fram
-                if (currentDir === "UP") hImg = g.hu; // Byter bild, roterar ej
-                else if (currentDir === "DOWN") hImg = g.hd; // Byter bild, roterar ej
-                else if (currentDir === "LEFT") ctx.scale(-1, 1); // Speglar för vänster
+                let hImg = g.h;
+                if (currentDir === "UP") hImg = g.hu;
+                else if (currentDir === "DOWN") hImg = g.hd;
+                else if (currentDir === "LEFT") ctx.scale(-1, 1);
                 
-                // Om bilden finns, rita ut. Annars blå ruta.
-                if(hImg.complete && hImg.naturalWidth !== 0) ctx.drawImage(hImg, -s/2, -s/2, s, s);
-                else { ctx.fillStyle = "#2196f3"; ctx.fillRect(-s/2, -s/2, s, s); }
+                if(hImg.complete && hImg.naturalWidth !== 0) {
+                    ctx.drawImage(hImg, offset, offset, s, s);
+                } else { 
+                    ctx.fillStyle = "#2196f3"; 
+                    ctx.fillRect(offset, offset, s, s); 
+                }
             } 
-            // 2. RITA SVANSEN (Kräver canvas-rotation)
+            // 2. RITA SVANSEN
             else if (i === snake.length - 1) {
                 if(moveDir === "LEFT") ctx.scale(-1, 1);
                 else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
                 else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
 
-                // Om bilden finns, rita ut. Annars röd ruta.
-                if(g.t.complete && g.t.naturalWidth !== 0) ctx.drawImage(g.t, -s/2, -s/2, s, s);
-                else { ctx.fillStyle = "#f44336"; ctx.fillRect(-s/2, -s/2, s, s); }
+                if(g.t.complete && g.t.naturalWidth !== 0) {
+                    ctx.drawImage(g.t, offset, offset, s, s);
+                } else { 
+                    ctx.fillStyle = "#f44336"; 
+                    ctx.fillRect(offset, offset, s, s); 
+                }
             } 
-            // 3. RITA KROPPEN (Kräver canvas-rotation)
+            // 3. RITA KROPPEN
             else {
                 if(moveDir === "LEFT") ctx.scale(-1, 1);
                 else if(moveDir === "UP") ctx.rotate(-Math.PI/2);
                 else if(moveDir === "DOWN") ctx.rotate(Math.PI/2);
 
-                // Om bilden finns, rita ut. Annars orange ruta.
-                if(g.b.complete && g.b.naturalWidth !== 0) ctx.drawImage(g.b, -s/2, -s/2, s, s);
-                else { ctx.fillStyle = "#ff9800"; ctx.fillRect(-s/2, -s/2, s, s); }
+                if(g.b.complete && g.b.naturalWidth !== 0) {
+                    ctx.drawImage(g.b, offset, offset, s, s);
+                } else { 
+                    ctx.fillStyle = "#ff9800"; 
+                    ctx.fillRect(offset, offset, s, s); 
+                }
             }
 
             ctx.restore();
